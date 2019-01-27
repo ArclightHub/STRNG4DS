@@ -27,7 +27,7 @@ void blink() {
   c = count%256;
   a = c>>4;
   d = count%256;
-  b = (d<<12)>>12;
+  b = (d&0x0f);
   sprintf(bufferOutput, "|%x|%x",a,b);
   if (Serial.availableForWrite()) {
     Serial.write(bufferOutput);
