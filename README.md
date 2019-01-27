@@ -2,7 +2,7 @@
 
 ## Project Summary:
 Use a small radioactive sample to generate true random to seed /dev/random on linux dedicated servers.
-
+![Fiestaware Plate, Arduino and Geiger Counter](prototype.png)
 
 # Arduino
 
