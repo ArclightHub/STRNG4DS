@@ -250,33 +250,36 @@ void printTime(int type){
  */
 void processChunk(){
 	bool enoughEntropy = true;
-	for(int i=0;i<24;i++){
+	for(int i=0;i<32;i++){
 		if(!validChar(bytesBuffer[i])){
 			enoughEntropy = false;
 		}
 	}
 	if(enoughEntropy){
-		char bytesActive[8];
-		sprintf(bytesActive,"%s","");
-		for(int j=0;j<8;j++){
-			append(bytesActive, bytesBuffer[0]);
-			removeHead();
-		}
-		char *ptr;
-		unsigned long ret = strtol(bytesActive, &ptr, 16);
-		samplesAdded++;
-		if(samplesAdded > 999){
-			samplesAdded = 0;
-			unsigned long kiloCaptureTime = ((unsigned long)time(NULL)) - sampleTime;
-			sampleTime = (unsigned long)time(NULL);
-			printf("The last 1,000 samples took %lu seconds.", kiloCaptureTime);
-			printTime(-1);
-		}
-		if(dieHardMode == 0){
-			add32BitsToEntropy(ret);
-			printTime(1);
-		} else {
-			dumpRandom(ret);
+		for(int runs = 0; runs < 3; runs++){
+			char bytesActive[8];
+			sprintf(bytesActive,"%s","");
+			for(int j=0;j<8;j++){
+				append(bytesActive, bytesBuffer[0]);
+				removeHead();
+			}
+			char *ptr;
+			unsigned long ret = strtol(bytesActive, &ptr, 16);
+			samplesAdded++;
+			if(samplesAdded > 999){
+				samplesAdded = 0;
+				unsigned long kiloCaptureTime = ((unsigned long)time(NULL)) - sampleTime;
+				sampleTime = (unsigned long)time(NULL);
+				printf("The last 1,000 samples took %lu seconds.", kiloCaptureTime);
+				printTime(-1);
+			}
+			if(dieHardMode == 0){
+				add32BitsToEntropy(ret);
+				printTime(1);
+			} else {
+				if(debug) printf("Adding - %lx\n", ret);
+				dumpRandom(ret);
+			}
 		}
 	}
 }

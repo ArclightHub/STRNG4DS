@@ -1,9 +1,10 @@
-int count = 0;
-bool state = false;
+unsigned int count = 0;
 const byte interruptPin = 21;
-bool mutex = false;
+char bufferOutput[4];
+unsigned int a,b,c,d,prev;
 
 void setup() {
+  prev = 0;
   pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(9600);
   Serial.write("Loading");
@@ -14,26 +15,22 @@ void setup() {
 }
 
 void loop() {
-  count++;
-  if(count > 16384) count = 0;
 }
 
 void blink() {
-  if(mutex == true){
+  count = (unsigned int)(micros()%65535);
+  if(count-prev < 64) {
+    //Debounce
+    prev = count;
     return;
-  } else mutex = true;
-  state = !state;
-  if(state){
-    digitalWrite(LED_BUILTIN, HIGH);
-  } else {
-    digitalWrite(LED_BUILTIN, LOW);
   }
-  char buffer[1];
-  char bufferOutput[2];
-  itoa(count%16,buffer,16);
-  sprintf(bufferOutput, "|%s",buffer);
+  c = count%256;
+  a = c>>4;
+  d = count%256;
+  b = (d<<12)>>12;
+  sprintf(bufferOutput, "|%x|%x",a,b);
   if (Serial.availableForWrite()) {
     Serial.write(bufferOutput);
   }
-  mutex = false;
+  prev = count;
 }
