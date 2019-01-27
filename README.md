@@ -2,7 +2,6 @@
 
 ## Project Summary:
 Use a small radioactive sample to generate true random to seed /dev/random on linux dedicated servers.
-![Fiestaware Plate, Arduino and Geiger Counter](prototype.png)
 
 # Arduino
 
@@ -21,3 +20,7 @@ If you are using a different board you may need to change the `interruptPin` use
 You will need to use the sudo command or run as root to use the binary to modify /dev/random
 You can run using:
 `sudo ./strng4ds.out`
+
+# Prototype Device
+Using a Fiestaware Plate, an Arduino and a Geiger Counter we can collect truely random entropy from the decay of uranium fission decay products.
+![Fiestaware Plate, Arduino and Geiger Counter](prototype.png)
