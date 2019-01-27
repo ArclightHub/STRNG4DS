@@ -21,16 +21,25 @@
 /* Function Declaration */
 void printEntropyCount();
 void clearEntropyPool();
+void dumpRandom(__u32 value);
 void add32BitsToEntropy(__u32 value);
 int reconnectSerial();
 int checkConnection(int fd);
 void append(char* s, char c);
 
-/* vars */
+/* Vars */
 int samples = 0;
+int samplesAdded = 0;
+unsigned long sampleTime;
 char bytesBuffer[1024];
-int debug = 0; //Show inner state data.
 
+/* Build Options */
+int debug = 0; //Show inner state data.
+int dieHardMode = 0; //Output to file for use in diehard, may take a VERY long time.
+
+/*
+ * Attempt to connect/reconnect to the arduino serial if disconnected.
+ */
 int reconnectSerial() {
     int fd = -1;
     int tries = -1;
@@ -53,14 +62,19 @@ int reconnectSerial() {
 	usleep(50000);
     }
     if(tries < 6 && tries > -1){
-        printf("Connected to %d\n",tries);
+       if(dieHardMode == 0) printf("Connected to %d\n",tries);
        char command[200];
        sprintf(command,"stty -F /dev/ttyACM%d cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts",tries);
        system(command);
-    } else printf("Failed to reconnect\n");
+    } else if(dieHardMode == 0) {
+		printf("Failed to reconnect\n");
+	}
     return fd;
 }
 
+/*
+ * Check if the given connection is working.
+ */
 int checkConnection(int fd) {
 	int connected = 1;
 	struct stat buf;
@@ -71,6 +85,9 @@ int checkConnection(int fd) {
 	return connected;
 }
 
+/*
+ * We don't use this but its here for reference.
+ */
 void printEntropyCount() {
 	char str[80];
 	int randomData = open("/dev/random", O_RDONLY);
@@ -82,6 +99,9 @@ void printEntropyCount() {
 	return;
 }
 
+/*
+ * We don't use this but its here for reference.
+ */
 void clearEntropyPool() {
 	char str[80];
 	int randomData = open("/dev/random", O_WRONLY);
@@ -90,6 +110,36 @@ void clearEntropyPool() {
 	return;
 }
 
+/*
+ * Dump to diehard-test.txt file (append).
+ * Diehard hates you and you will need to collect several days of data for a test.
+ * You will need millions of samples.
+ *
+ * Usage: dieharder -a -g 202 -f diehard-test.txt
+ *
+ * You will need to add the following to the top of the file based on its contents:
+ * type: d
+ * count: <number of uint values in file (number of lines).>
+ * numbit: 32
+ */
+void dumpRandom(__u32 value){
+	FILE *f = fopen("diehard-test.txt", "a");
+	if (f != NULL){
+		fprintf(f, "%u\n", value);
+	}
+	fclose(f);
+	return;
+}
+
+/*
+ * Add the given uint value to:
+ *
+ * Normal mode:
+ * The /dev/random entropy pool and increment the entropy counter.
+ *
+ * Diehard mode:
+ * The diehard-test.txt file.
+ */
 void add32BitsToEntropy(__u32 value){
 	char str[80];
 	struct rand_pool_info randomInfo;
@@ -115,6 +165,9 @@ void add32BitsToEntropy(__u32 value){
 	return;
 }
 
+/*
+ * Valid characters to consider part of the incoming entropy stream from the device.
+ */
 bool validChar(char c){
 	if(
 		c == '0'
@@ -139,6 +192,10 @@ bool validChar(char c){
 	return false;
 }
 
+/*
+ * Append string.
+ * Used for buffers.
+ */
 void append(char* s, char c) {
 	if(!validChar(c)){
 		return;
@@ -148,6 +205,9 @@ void append(char* s, char c) {
 	s[len+1] = '\0';
 }
 
+/*
+ * Remove the element from the top of the stack.
+ */
 void removeHead(){
 	for(int i = 0; i < 1024; i++){
 		bytesBuffer[i] = bytesBuffer[i+1];
@@ -155,6 +215,10 @@ void removeHead(){
 	bytesBuffer[1023] = '|';
 }
 
+/*
+ * Print the current time formatted.
+ * Low precision to prevent leaking entropy.
+ */
 void printTime(int type){
   char buffer[26];
   int usec;
@@ -176,10 +240,14 @@ void printTime(int type){
   if(type == 1){
 	  printf("Added additional entropy at %s.%02d\n", buffer, usec);
   } else {
-	  printf("%s.%02d\n", buffer, usec);
+	  //Print string for use at the end of other prints
+	  printf(" %s.%02d\n", buffer, usec);
   }
 }
 
+/*
+ * Process the buffer and attempt to add some entropy.
+ */
 void processChunk(){
 	bool enoughEntropy = true;
 	for(int i=0;i<24;i++){
@@ -194,15 +262,28 @@ void processChunk(){
 			append(bytesActive, bytesBuffer[0]);
 			removeHead();
 		}
-		//if(debug) printf("0x%s\n", bytesActive);
 		char *ptr;
 		unsigned long ret = strtol(bytesActive, &ptr, 16);
-		//printf("The number(unsigned long integer) is %ld\n", ret);
-		add32BitsToEntropy(ret);
-		printTime(1);
+		samplesAdded++;
+		if(samplesAdded > 999){
+			samplesAdded = 0;
+			unsigned long kiloCaptureTime = ((unsigned long)time(NULL)) - sampleTime;
+			sampleTime = (unsigned long)time(NULL);
+			printf("The last 1,000 samples took %lu seconds.", kiloCaptureTime);
+			printTime(-1);
+		}
+		if(dieHardMode == 0){
+			add32BitsToEntropy(ret);
+			printTime(1);
+		} else {
+			dumpRandom(ret);
+		}
 	}
 }
 
+/*
+ * Process the raw serial data and add it to the entropy buffer.
+ */
 void processData(char bytes[64]){
 	char newBuffer[128];
 	sprintf(newBuffer,"%s","");
@@ -226,9 +307,10 @@ int main() {
     ssize_t size;
     sprintf(bytesBuffer,"%s","");
     fd = reconnectSerial();
+    sampleTime = (unsigned long)time(NULL);
     while(1){
 		if(checkConnection(fd) != 1){
-			printf("%s\n", "Attempting to reconnect");
+			if(dieHardMode == 0) printf("%s\n", "Attempting to reconnect");
 			fd = reconnectSerial();
 		}
 		if(checkConnection(fd) == 1){
@@ -240,7 +322,7 @@ int main() {
 			//TODO: Find a better way than this!!
 			samples++;
 			if(samples > 2048) {
-				printf("%s\n", "Forcing Reconnect!");
+				if(dieHardMode == 0) printf("%s\n", "Forcing Reconnect!");
 				fd = -1;
 				samples = 0;
 			}
