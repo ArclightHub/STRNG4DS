@@ -66,9 +66,9 @@ int reconnectSerial() {
        char command[200];
        sprintf(command,"stty -F /dev/ttyACM%d cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts",tries);
        system(command);
-    } else if(dieHardMode == 0) {
+    } else {
 		usleep(50000);
-		printf("Failed to reconnect\n");
+		if(dieHardMode == 0) printf("Failed to reconnect\n");
 		return fd;
 	}
 
@@ -79,7 +79,7 @@ int reconnectSerial() {
 		read(fd, &bytes, 64);
 	}
 	//Return it
-    return fd;
+	return fd;
 }
 
 /*
