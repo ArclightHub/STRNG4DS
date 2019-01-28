@@ -1,25 +1,25 @@
-unsigned int count = 0;
+int count = 0;
+int prev = 0;
 const byte interruptPin = 21;
 char bufferOutput[4];
-unsigned int a,b,c,d,prev;
+unsigned int a,b,c,d;
+int start = 0;
 
 void setup() {
-  prev = 0;
   pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(9600);
-  Serial.write("Loading");
-  delay(500);
   pinMode(interruptPin, INPUT_PULLUP);
-  delay(500);
-  attachInterrupt(digitalPinToInterrupt(interruptPin), blink, CHANGE); 
+  attachInterrupt(digitalPinToInterrupt(interruptPin), blink, CHANGE);
+  delay(2000);
+  start = 1;
 }
 
 void loop() {
 }
 
 void blink() {
-  count = (unsigned int)(micros()%65535);
-  if(count-prev < 64) {
+  count = (int)((micros()/8)%24576);
+  if(abs(count-prev) < 64 || start == 0) {
     //Debounce
     prev = count;
     return;
