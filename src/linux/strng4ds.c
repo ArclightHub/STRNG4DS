@@ -59,7 +59,7 @@ int reconnectSerial() {
 	} else if(tries == 5){
 	    fd = open("/dev/ttyACM5", O_RDWR | O_NONBLOCK);
 	}
-	usleep(50000);
+	usleep(25000);
     }
     if(tries < 6 && tries > -1){
        if(dieHardMode == 0) printf("Connected to %d\n",tries);
@@ -67,8 +67,18 @@ int reconnectSerial() {
        sprintf(command,"stty -F /dev/ttyACM%d cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts",tries);
        system(command);
     } else if(dieHardMode == 0) {
+		usleep(50000);
 		printf("Failed to reconnect\n");
+		return fd;
 	}
+
+	//Ensure it is cleared.
+	for(int clear = 0; clear < 5; clear++){
+		usleep(50000);
+		char bytes[64];
+		read(fd, &bytes, 64);
+	}
+	//Return it
     return fd;
 }
 
@@ -249,14 +259,15 @@ void printTime(int type){
  * Process the buffer and attempt to add some entropy.
  */
 void processChunk(){
+	int minChunksToProcess = 5;
 	bool enoughEntropy = true;
-	for(int i=0;i<32;i++){
+	for(int i=0;i<(minChunksToProcess*8);i++){
 		if(!validChar(bytesBuffer[i])){
 			enoughEntropy = false;
 		}
 	}
 	if(enoughEntropy){
-		for(int runs = 0; runs < 3; runs++){
+		for(int runs = 0; runs < (minChunksToProcess-1); runs++){
 			char bytesActive[8];
 			sprintf(bytesActive,"%s","");
 			for(int j=0;j<8;j++){
@@ -321,7 +332,7 @@ int main() {
 			read(fd, &bytes, 64);
 			processData(bytes);
 			if(debug) printf("Read %s\n", bytes);
-			usleep(50000);
+			usleep(25000);
 			//TODO: Find a better way than this!!
 			samples++;
 			if(samples > 2048) {

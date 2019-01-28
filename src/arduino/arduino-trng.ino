@@ -22,8 +22,8 @@ void blink() {
   count = (int)((micros()/8)%24576);
   delta = abs(count-prev);
   if(
-    delta < 8
-    || delta > 24568
+    delta < 64
+    || delta > 24512
     || start == 0
   ) {
     //Debounce
