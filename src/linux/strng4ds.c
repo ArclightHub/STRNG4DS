@@ -337,6 +337,7 @@ int main() {
 			samples++;
 			if(samples > 2048) {
 				if(dieHardMode == 0) printf("%s\n", "Forcing Reconnect!");
+				close(fd);
 				fd = -1;
 				samples = 0;
 			}
