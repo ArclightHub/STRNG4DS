@@ -17,6 +17,7 @@
 
 /*******************************************************************************************
  * Linux program to read values from Arduino with attached geiger counter via trigger pin.
+ * Values are then processed into chunks and added to the /dev/random entropy pool.
  *
  * Devices validated:
  * Arduino: Mega, Uno
