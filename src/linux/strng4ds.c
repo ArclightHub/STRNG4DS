@@ -15,8 +15,15 @@
 #include <sys/time.h>
 #include <math.h>
 
-//Early prototype.
-//Version: 0.0
+/*******************************************************************************************
+ * Linux program to read values from Arduino with attached geiger counter via trigger pin.
+ *
+ * Devices validated:
+ * Arduino: Mega, Uno
+ * Geiger counters: eBay device (Seen in prototype image), GMC-300E+
+ *
+ * Version: 0.1
+ *******************************************************************************************/
 
 /* Function Declaration */
 void printEntropyCount();
@@ -35,36 +42,37 @@ char bytesBuffer[1024];
 
 /* Build Options */
 int debug = 0; //Show inner state data.
+int messageLevel = 1; //Message level, determines if we print messages when entropy is added to the pool.
 int dieHardMode = 0; //Output to file for use in diehard, may take a VERY long time.
+int serialInterface = 0; // 0 = TTY | 1 = USB | You will need to check to see which interface your device uses prior to compile.
 
 /*
  * Attempt to connect/reconnect to the arduino serial if disconnected.
+ *
+ * Some Arduinos use /dev/ttyACMx and others use /dev/ttyUSBx (Where x is a dynamically assigned number).
+ * Please remember to compile for your specific device. (serialInterface)
+ * For additional reference please check https://playground.arduino.cc/Interfacing/LinuxTTY
  */
 int reconnectSerial() {
     int fd = -1;
     int tries = -1;
+    char device[] = "/dev/ttyACM0";
+    char const *devicePtr = device;
     while( checkConnection(fd) != 1 && tries < 6){
 	tries++;
-	//TODO: Clean this up
-	if(tries == 0){
-	    fd = open("/dev/ttyACM0", O_RDWR | O_NONBLOCK);
-	} else if(tries == 1){
-	    fd = open("/dev/ttyACM1", O_RDWR | O_NONBLOCK);
-	} else if(tries == 2){
-	    fd = open("/dev/ttyACM2", O_RDWR | O_NONBLOCK);
-	} else if(tries == 3){
-	    fd = open("/dev/ttyACM3", O_RDWR | O_NONBLOCK);
-	} else if(tries == 4){
-	    fd = open("/dev/ttyACM4", O_RDWR | O_NONBLOCK);
-	} else if(tries == 5){
-	    fd = open("/dev/ttyACM5", O_RDWR | O_NONBLOCK);
+	//Determine which device to check.
+        if(serialInterface == 0){
+            sprintf(device, "/dev/ttyACM%d", tries);
+	} else {
+            sprintf(device, "/dev/ttyUSB%d", tries);
 	}
+        fd = open(device, O_RDWR | O_NONBLOCK);
 	usleep(25000);
     }
     if(tries < 6 && tries > -1){
        if(dieHardMode == 0) printf("Connected to %d\n",tries);
        char command[200];
-       sprintf(command,"stty -F /dev/ttyACM%d cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts",tries);
+       sprintf(command,"stty -F %s cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts", device);
        system(command);
     } else {
 		usleep(50000);
@@ -248,7 +256,9 @@ void printTime(int type){
 
   strftime(buffer, 26, "%H:%M:%S", tm_info);
   if(type == 1){
-	  printf("Added additional entropy at %s.%02d\n", buffer, usec);
+	  if(messageLevel == 1){
+            printf("Added additional entropy at %s.%02d\n", buffer, usec);
+	  }
   } else {
 	  //Print string for use at the end of other prints
 	  printf(" %s.%02d\n", buffer, usec);
@@ -289,6 +299,7 @@ void processChunk(){
 				printTime(1);
 			} else {
 				if(debug) printf("Adding - %lx\n", ret);
+				//Dump to test file for use in diehard suite.
 				dumpRandom(ret);
 			}
 		}
@@ -332,10 +343,10 @@ int main() {
 			read(fd, &bytes, 64);
 			processData(bytes);
 			if(debug) printf("Read %s\n", bytes);
-			usleep(25000);
+			usleep(12500);
 			//TODO: Find a better way than this!!
 			samples++;
-			if(samples > 2048) {
+			if(samples > 32768) {
 				if(dieHardMode == 0) printf("%s\n", "Forcing Reconnect!");
 				close(fd);
 				fd = -1;
@@ -345,3 +356,4 @@ int main() {
     }
     return 0;
 }
+
