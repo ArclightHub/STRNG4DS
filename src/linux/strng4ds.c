@@ -58,7 +58,6 @@ int reconnectSerial() {
     int fd = -1;
     int tries = -1;
     char device[] = "/dev/ttyACM0";
-    char const *devicePtr = device;
     while( checkConnection(fd) != 1 && tries < 6){
 	tries++;
 	//Determine which device to check.
