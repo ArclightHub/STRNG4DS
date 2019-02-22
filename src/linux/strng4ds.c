@@ -15,16 +15,48 @@
 #include <sys/time.h>
 #include <math.h>
 
-/*******************************************************************************************
+/***************************************************************************************************
+ *
  * Linux program to read values from Arduino with attached geiger counter via trigger pin.
  * Values are then processed into chunks and added to the /dev/random entropy pool.
+ *
+ * ** Quick Start ***
+ * 1.) To get started plug your Arduino into your machine.
+ * 2.) Update the interruptPin variable in the arduino-trng.ino sketch to the pin number
+ *     you want to use as the trigger.
+ * 3.) Upload the sketch to your Arduino.
+ * 4.) In the Linux terminal look for your device at /dev/ttyACMx or /dev/ttyUSBx
+ *     (Where x is a dynamically assigned number).
+ * 5.) Based on this you should set the build option variable serialInterface:
+ *     0 for /dev/ttyACMx and 1 for /dev/ttyUSBx
+ * 6.) Compile the Linux program: gcc strng4ds.c -o strng4ds.out -lm
+ * 7.) Run/Test the program: sudo ./strng4ds.out
+ *
+ * Normal operation using a safe beta/gamma source should result in roughly 1000+ cpm.
+ * This should add 100+ bits of actual entropy to the pool every second.
+ * To be safe we only add 1/4 of the added entropy to the count in the add32BitsToEntropy function.
+ * This large safety margin is to account for the possibility of biases being introduced in the
+ * various setups which are used to generate the entropy.
+ * (Eg, bad Arduino clock, poor trigger signal quality, etc)
+ *
+ * Modes: (Normal / Diehard)
+ * For normal operation set the dieHardMode build option to 0 (default).
+ * For testing with diehard or similar test suite set dieHardMode to 1.
  *
  * Devices validated:
  * Arduino: Mega, Uno
  * Geiger counters: eBay device (Seen in prototype image), GMC-300E+
+ * G-M tubes: eBay tube, SBM-20
+ * Radioactive source: Uranium oxide glaze (dinnerware)
+ *
+ * The radioactive entropy source used in this project is uranium oxide glaze.
+ * https://en.wikipedia.org/wiki/Fiesta_(dinnerware)#Radioactive_glazes
+ * In theory any beta/gamma source should work fine however the glazes used in
+ * plates seem to make it safer to work with.
  *
  * Version: 0.1
- *******************************************************************************************/
+ *
+ ***************************************************************************************************/
 
 /* Function Declaration */
 void printEntropyCount();
@@ -48,7 +80,7 @@ int dieHardMode = 0; //Output to file for use in diehard, may take a VERY long t
 int serialInterface = 0; // 0 = TTY | 1 = USB | You will need to check to see which interface your device uses prior to compile.
 
 /*
- * Attempt to connect/reconnect to the arduino serial if disconnected.
+ * Attempt to connect/reconnect to the Arduino serial if disconnected.
  *
  * Some Arduinos use /dev/ttyACMx and others use /dev/ttyUSBx (Where x is a dynamically assigned number).
  * Please remember to compile for your specific device. (serialInterface)
