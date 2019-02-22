@@ -1,7 +1,9 @@
 # STRNG4DS
 
 ## Project Summary:
-Use a small radioactive sample to generate true random to seed /dev/random on linux dedicated servers.
+Use a small radioactive sample to generate true random to seed /dev/random on linux dedicated servers.  
+![Fiestaware Plate, Arduino and Geiger Counter](prototype.png)  
+Using a Fiestaware Plate, an Arduino and a Geiger Counter we can collect truely random entropy from the decay of uranium fission decay products!
 
 # Quick Start Guide
 
@@ -17,8 +19,9 @@ Use a small radioactive sample to generate true random to seed /dev/random on li
 # Arduino
 
 ### Compiling Arduino:
-Use Arduino IDE with modifications for your board, this prototype used the mega however many other boards should work perfectly fine.
-If you are using a different board you may need to change the `interruptPin` used by `attachInterrupt`. For further reference please check the [documentation](https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/).
+Use Arduino IDE with modifications for your board, this prototype used the mega however many other boards should work perfectly fine.  
+If you are using a different board you may need to change the `interruptPin` used by `attachInterrupt`.  
+For further reference please check the [documentation](https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/).
 
 
 
@@ -31,13 +34,13 @@ If you are using a different board you may need to change the `interruptPin` use
 You will need to use the sudo command or run as root to use the binary as it requires root to modify `/dev/random`. For example: `sudo ./strng4ds.out`
 
 # Devices validated
-Arduino: Mega, Uno
-Geiger counters: eBay device (Seen in prototype image), GMC-300E+
-G-M tubes: eBay tube, SBM-20
-Radioactive source: Uranium oxide glaze (dinnerware)
+- Arduino: Mega, Uno
+- Geiger counters: eBay device (Seen in prototype image), GMC-300E+
+- G-M tubes: eBay tube, SBM-20
+- Radioactive source: Uranium oxide glaze (dinnerware)
 
 # Notes
-The radioactive entropy source used in this project is [uranium oxide glaze](https://en.wikipedia.org/wiki/Fiesta_(dinnerware)#Radioactive_glazes).
+The radioactive entropy source used in this project is [uranium oxide glaze](https://en.wikipedia.org/wiki/Fiesta_(dinnerware)#Radioactive_glazes).  
 In theory any beta/gamma source should work fine however the glazes used in plates seem to make it safer to work with.
 
 # Prototype Device
