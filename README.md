@@ -1,18 +1,18 @@
 # STRNG4DS
 
 ## Project Summary:
-Use a small radioactive sample to generate true random to seed /dev/random on linux dedicated servers.    
-![Fiestaware Plate, Arduino and Geiger Counter](prototype.png)    
+Use a small radioactive sample to generate true random to seed /dev/random on linux dedicated servers.<br/><br/>
+![Fiestaware Plate, Arduino and Geiger Counter](prototype.png)<br/><br/>
 Using a Fiestaware Plate, an Arduino and a Geiger Counter we can collect truely random entropy from the decay of uranium fission decay products!
 
 # Quick Start Guide
 
 1. To get started plug your Arduino into your machine.
-2. Update the interruptPin variable in the arduino-trng.ino sketch to the pin number you want to use as the trigger.
+2. Update the interruptPin variable in the `arduino-trng.ino` sketch to the pin number you want to use as the trigger.
 3. Upload the sketch to your Arduino.
 4. Connect your Geiger counter or trigger source to the specified interrupt pin.
-5. In the Linux terminal look for your device at /dev/ttyACMx or /dev/ttyUSBx (Where x is a dynamically assigned number).
-6. Based on this you should set the build option variable serialInterface in strng4ds.c | 0 for /dev/ttyACMx and 1 for /dev/ttyUSBx
+5. In the Linux terminal look for your device at `/dev/ttyACMx` or `/dev/ttyUSBx` (Where x is a dynamically assigned number).
+6. Based on this you should set the build option variable serialInterface in `strng4ds.c` | `0` for `/dev/ttyACMx` and `1` for `/dev/ttyUSBx`
 7. Compile the Linux program: `gcc strng4ds.c -o strng4ds.out -lm`
 8. Run/Test the program: `sudo ./strng4ds.out`
 
